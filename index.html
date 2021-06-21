@@ -7,7 +7,7 @@
     <style>
         video {
 /*             position: absolute; */
-/*             visibility: hidden; */
+             visibility: hidden;
         }
         canvas {
             border: 1px solid black;
@@ -24,6 +24,7 @@
         </div>
         <div>
             <canvas id="canvas" width="640"></canvas>
+            <canvas id="canvas1" width="640"></canvas>
         </div>
         <video id="video" playsinline autoplay></video>
     </div>
@@ -108,7 +109,9 @@
             switchcamerabtn = document.getElementById('switch-camera-btn');
             video = document.getElementById('video');
             canvas = document.getElementById('canvas');
+            canvas1 = document.getElementById('canvas1');
             ctx = canvas.getContext('2d');
+            ctx1 = canvas1.getContext('2d');
 
             // Wait until the video stream canvas play
             video.addEventListener('canplay', function(e) {
@@ -117,6 +120,8 @@
                     if (video.videoWidth > 0) h = video.videoHeight / (video.videoWidth / w);
                     canvas.setAttribute('width', w);
                     canvas.setAttribute('height', h);
+                    canvas1.setAttribute('width', w);
+                    canvas1.setAttribute('height', h);
                     isStreaming = true;
                 }
             }, false);
@@ -188,7 +193,9 @@
 
         function ncnn_erdnet() {
             var canvas = document.getElementById('canvas');
+            var canvas1 = document.getElementById('canvas1')
             var ctx = canvas.getContext('2d');
+            var ctx1 = canvas1.getContext('2d');
 
             var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             var data = imageData.data;
@@ -200,6 +207,7 @@
             var result = HEAPU8.subarray(dst, dst + data.length);
             imageData.data.set(result);
             ctx.putImageData(imageData, 0, 0);
+            ctx1.putImageData(imageData, 0, 0)
         }
 
         //Request Animation Frame function
