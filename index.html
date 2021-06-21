@@ -3,7 +3,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width" />
-    <title>ncnn webassembly erdnet</title>
     <style>
         video {
 /*             position: absolute; */
@@ -15,13 +14,14 @@
 
 <body>
     <div>
-        <h1>ncnn webassembly erdnet</h1>
         <div>
-            <button disabled id="switch-camera-btn" style="height:48px">Switch Camera</button>
+            <button disabled id="switch-camera-btn" style="height:48px; visibility: hidden">Switch Camera</button>
         </div>
         <div>
             <canvas id="canvas" width="100"></canvas>
-            <canvas id="canvas1" width="100"></canvas>
+            <canvas id="canvasL" width="100"></canvas>
+            <canvas id="canvasR" width="100"></canvas>
+            <canvas id="canvasD" width="100"></canvas>
         </div>
         <video id="video" playsinline autoplay></video>
     </div>
@@ -106,10 +106,13 @@
             switchcamerabtn = document.getElementById('switch-camera-btn');
             video = document.getElementById('video');
             canvas = document.getElementById('canvas');
-            canvas1 = document.getElementById('canvas1');
+            canvasL = document.getElementById('canvasL');
+            canvasR = document.getElementById('canvasR');
+            canvasD = document.getElementById('canvasD');
             ctx = canvas.getContext('2d');
-            ctx1 = canvas1.getContext('2d');
-            ctx1.rotate(90)
+            ctxL = canvasL.getContext('2d');
+            ctxR = canvasR.getContext('2d');
+            ctxD = canvasD.getContext('2d');
 
             // Wait until the video stream canvas play
             video.addEventListener('canplay', function(e) {
@@ -118,8 +121,12 @@
                     if (video.videoWidth > 0) h = video.videoHeight / (video.videoWidth / w);
                     canvas.setAttribute('width', w);
                     canvas.setAttribute('height', h);
-                    canvas1.setAttribute('width', w);
-                    canvas1.setAttribute('height', h);
+                    canvasL.setAttribute('width', w);
+                    canvasL.setAttribute('height', h);
+                    canvasR.setAttribute('width', w);
+                    canvasR.setAttribute('height', h);
+                    canvasD.setAttribute('width', w);
+                    canvasD.setAttribute('height', h);
                     isStreaming = true;
                 }
             }, false);
@@ -191,9 +198,13 @@
 
         function ncnn_erdnet() {
             var canvas = document.getElementById('canvas');
-            var canvas1 = document.getElementById('canvas1')
+            var canvasL = document.getElementById('canvasL');
+            var canvasR = document.getElementById('canvasR');
+            var canvasD = document.getElementById('canvasD');
             var ctx = canvas.getContext('2d');
-            var ctx1 = canvas1.getContext('2d');
+            var ctxL = canvasL.getContext('2d');
+            var ctxR = canvasR.getContext('2d');
+            var ctxD = canvasD.getContext('2d');
 
             var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             var data = imageData.data;
@@ -205,9 +216,9 @@
             var result = HEAPU8.subarray(dst, dst + data.length);
             imageData.data.set(result);
             ctx.putImageData(imageData, 0, 0);
-            ctx1.putImageData(imageData, 0, 0);
-            ctx1.translate(canvas1.width / 2, canvas1.height / 2);
-            ctx1.rotate(90 * Math.PI / 180);
+            ctxL.putImageData(imageData, 0, 0);
+            ctxR.putImageData(imageData, 0, 0);
+            ctxD.putImageData(imageData, 0, 0);
         }
 
         //Request Animation Frame function
