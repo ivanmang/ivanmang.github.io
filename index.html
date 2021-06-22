@@ -18,10 +18,17 @@
             <button disabled id="switch-camera-btn" style="height:48px; visibility: hidden">Switch Camera</button>
         </div>
         <div>
-            <canvas id="canvas" width="100"></canvas>
-            <canvas id="canvasL" width="100"></canvas>
-            <canvas id="canvasR" width="100"></canvas>
-            <canvas id="canvasD" width="100"></canvas>
+            <p align=center>
+                <canvas id="canvas" width="100"></canvas>
+            </p>
+            <p align=center>
+                <canvas id="canvasL" width="100"></canvas>
+                <canvas id="canvasSpace" width="100"></canvas>
+                <canvas id="canvasR" width="100"></canvas>
+            </p>
+            <p align=center>
+                <canvas id="canvasD" width="100"></canvas>
+            </p>
         </div>
         <video id="video" playsinline autoplay></video>
     </div>
@@ -95,8 +102,8 @@
 
         var shouldFaceUser = true;
         var stream = null;
-        var w = 320;
-        var h = 240;
+        var w = 240; // Original 320*240
+        var h = 180; 
 
         var dst = null;
         var resultarray = null;
@@ -109,10 +116,12 @@
             canvasL = document.getElementById('canvasL');
             canvasR = document.getElementById('canvasR');
             canvasD = document.getElementById('canvasD');
+            canvasSpace = document.getElementById('canvasSpace');   // Spacing Purpose
             ctx = canvas.getContext('2d');
             ctxL = canvasL.getContext('2d');
             ctxR = canvasR.getContext('2d');
             ctxD = canvasD.getContext('2d');
+            ctxSpace = canvasSpace.getContext('2d');    // Spacing Purpose
 
             // Wait until the video stream canvas play
             video.addEventListener('canplay', function(e) {
@@ -121,12 +130,14 @@
                     if (video.videoWidth > 0) h = video.videoHeight / (video.videoWidth / w);
                     canvas.setAttribute('width', w);
                     canvas.setAttribute('height', h);
-                    canvasL.setAttribute('width', w);
-                    canvasL.setAttribute('height', h);
-                    canvasR.setAttribute('width', w);
-                    canvasR.setAttribute('height', h);
+                    canvasL.setAttribute('width', h);
+                    canvasL.setAttribute('height', w);
+                    canvasR.setAttribute('width', h);
+                    canvasR.setAttribute('height', w);
                     canvasD.setAttribute('width', w);
                     canvasD.setAttribute('height', h);
+                    canvasSpace.setAttribute('width', w);  // Spacing Purpose
+                    canvasSpace.setAttribute('height', w);  // Spacing Purpose
                     isStreaming = true;
                 }
             }, false);
@@ -216,9 +227,68 @@
             var result = HEAPU8.subarray(dst, dst + data.length);
             imageData.data.set(result);
             ctx.putImageData(imageData, 0, 0);
-            ctxL.putImageData(imageData, 0, 0);
-            ctxR.putImageData(imageData, 0, 0);
-            ctxD.putImageData(imageData, 0, 0);
+            // Rotate the image data and display -- Tommy
+            // 1. Prepare ImageData
+            let imageData1 = new ImageData(h,w);
+            let imageData2 = new ImageData(h,w);    // Left
+            let imageData3 = new ImageData(h,w);    // Right
+            let imageData4 = new ImageData(w,h);    // Down
+            let data1 = imageData1.data;
+            let data2 = imageData2.data;
+            let data3 = imageData3.data;
+            let data4 = imageData4.data;
+            // 2. Transpose
+            let r = r1 = 0  // index of red pixel in old and new ImageData respectively
+            for (let y = 0, lenH = h; y < lenH; y++) {
+                for (let x = 0, lenW = w; x < lenW; x++) {
+                    r  = (x + lenW * y) * 4;
+                    r1 = (y + lenH * x) * 4;
+                    data1[r1 + 0] = data[r + 0];
+                    data1[r1 + 1] = data[r + 1];
+                    data1[r1 + 2] = data[r + 2];
+                    data1[r1 + 3] = data[r + 3];
+                }
+            }
+            // 3.1. Rotate for Left window
+            for (let y = 0, lenH = w; y < lenH; y++) {
+                for (let x = 0, lenW = h; x < lenW; x++) {
+                    r  = (x + lenW * y) * 4;
+                    r1 = (x + lenW * (lenH - 1 - y)) * 4
+                    data2[r1 + 0] = data1[r + 0];
+                    data2[r1 + 1] = data1[r + 1];
+                    data2[r1 + 2] = data1[r + 2];
+                    data2[r1 + 3] = data1[r + 3];
+                }
+            }
+            // 3.2. Rotate for Right window
+            for (let y = 0, lenH = w; y < lenH; y++) {
+                for (let x = 0, lenW = h; x < lenW; x++) {
+                    r  = (x + lenW * y) * 4;
+                    r1 = ((lenW - 1 - x) + lenW * y) * 4;
+                    data3[r1 + 0] = data1[r + 0];
+                    data3[r1 + 1] = data1[r + 1];
+                    data3[r1 + 2] = data1[r + 2];
+                    data3[r1 + 3] = data1[r + 3];
+                }
+            }
+            // 3.3. Rotate for Down window
+            for (let y = 0, lenH = h; y < lenH; y++) {
+                for (let x = 0, lenW = w; x < lenW; x++) {
+                    r  = (x + lenW * y) * 4;
+                    r1 = (-(x + 1) + lenW * (lenH - y)) * 4
+                    data4[r1 + 0] = data[r + 0];
+                    data4[r1 + 1] = data[r + 1];
+                    data4[r1 + 2] = data[r + 2];
+                    data4[r1 + 3] = data[r + 3];
+                }
+            }
+            // 4. Redraw image
+            ctxL.clearRect(0, 0, w, h);
+            ctxL.putImageData(imageData2, 0, 0, 0, 0, h, w);
+            ctxR.clearRect(0, 0, w, h);
+            ctxR.putImageData(imageData3, 0, 0, 0, 0, h, w);
+            ctxD.clearRect(0, 0, w, h);
+            ctxD.putImageData(imageData4, 0, 0, 0, 0, w, h);
         }
 
         //Request Animation Frame function
@@ -227,13 +297,13 @@
 
             ctx.fillRect(0, 0, w, h);
             ctx.drawImage(video, 0, 0, w, h);
-
+            
             ncnn_erdnet();
 
             window.requestAnimationFrame(sFilter);
         }
 
-    </script>
+    </script>   
 
 </body>
 
