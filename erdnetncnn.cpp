@@ -90,7 +90,7 @@ static void on_image_render(cv::Mat& rgba)
 
     g_erdnet->draw(rgba, bg_bgr, mask_g);
 
-    draw_fps(rgba);
+    //draw_fps(rgba);
 }
 
 #ifdef __EMSCRIPTEN_PTHREADS__
